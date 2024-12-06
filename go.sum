@@ -1,0 +1,6 @@
+github.com/golang-jwt/jwt/v5 v5.2.1 h1:OuVbFODueb089Lh128TAcimifWaLhJwVflnrgM17wHk=
+github.com/golang-jwt/jwt/v5 v5.2.1/go.mod h1:pqrtFR0X4osieyHYxtmOUWsAWrfe1Q5UVIyoH402zdk=
+github.com/hanson/gFile v0.0.0-20230417072256-83e263b855d4 h1:if1KFBI3jjspRazTSXcXemDS5ICM1qJPeGpg71K1rfA=
+github.com/hanson/gFile v0.0.0-20230417072256-83e263b855d4/go.mod h1:C3d3+fIGZytNhnLtCdBB4yzjLKgBxer/UxoIeBVkozo=
+github.com/hanson/go-toolbox v0.0.0-20240913115204-6a99ca7a1f3e h1:Huqv9lCufdVFVTPK9IP6aTCP1qa9YhIIsxdNczo/2uE=
+github.com/hanson/go-toolbox v0.0.0-20240913115204-6a99ca7a1f3e/go.mod h1:t5uD0LI/nQSmYPTT1XRo5RFg+oPlU/VRFsCKJeTBXSw=
