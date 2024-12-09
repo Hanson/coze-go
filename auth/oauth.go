@@ -7,6 +7,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/hanson/coze-go/client"
 	"github.com/hanson/go-toolbox/utils"
+	"github.com/patrickmn/go-cache"
 	"io"
 	"log"
 	"net/http"
@@ -25,6 +26,8 @@ type Oauth struct {
 	accessToken *OauthTokenResp
 }
 
+var c *cache.Cache
+
 func NewOauth(appId, kid string) (oauth *Oauth) {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 		"iss": appId,                    // OAuth 应用的 ID
@@ -34,6 +37,8 @@ func NewOauth(appId, kid string) (oauth *Oauth) {
 		"jti": utils.RandStr(16, 0),     // 随机字符串，防止重放攻击
 	})
 	token.Header["kid"] = kid
+
+	c = cache.New(5*time.Minute, 10*time.Minute)
 
 	return &Oauth{
 		token: token,
@@ -83,7 +88,7 @@ type OauthTokenResp struct {
 }
 
 func (o *Oauth) GetClient() (*client.Client, error) {
-	rsp, err := o.GetToken()
+	rsp, err := o.getToken()
 	if err != nil {
 		return nil, err
 	}
@@ -92,19 +97,26 @@ func (o *Oauth) GetClient() (*client.Client, error) {
 }
 
 func (o *Oauth) GetToken() (*OauthTokenResp, error) {
+	return o.getToken()
+}
+
+func (o *Oauth) getToken() (*OauthTokenResp, error) {
+	tokenCache, found := c.Get("token_" + o.kid)
+	if found {
+		return tokenCache.(*OauthTokenResp), nil
+	}
+
 	sign, err := o.sign()
 	if err != nil {
 		return nil, err
 	}
-
-	client := http.Client{}
 
 	req, _ := http.NewRequest("POST", "https://api.coze.cn/api/permission/oauth2/token", bytes.NewReader([]byte(`{"duration_seconds": 86399,"grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer"}`)))
 
 	req.Header.Add("Authorization", "Bearer "+sign)
 	req.Header.Add("Content-Type", "application/json")
 
-	resp, err := client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Printf("err: %+v", err)
 		return nil, err
@@ -124,6 +136,8 @@ func (o *Oauth) GetToken() (*OauthTokenResp, error) {
 	}
 
 	o.accessToken = &rsp
+
+	c.Set("token_"+o.kid, &rsp, 86000)
 
 	return &rsp, nil
 }

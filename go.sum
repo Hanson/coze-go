@@ -4,3 +4,5 @@ github.com/hanson/gFile v0.0.0-20230417072256-83e263b855d4 h1:if1KFBI3jjspRazTSX
 github.com/hanson/gFile v0.0.0-20230417072256-83e263b855d4/go.mod h1:C3d3+fIGZytNhnLtCdBB4yzjLKgBxer/UxoIeBVkozo=
 github.com/hanson/go-toolbox v0.0.0-20240913115204-6a99ca7a1f3e h1:Huqv9lCufdVFVTPK9IP6aTCP1qa9YhIIsxdNczo/2uE=
 github.com/hanson/go-toolbox v0.0.0-20240913115204-6a99ca7a1f3e/go.mod h1:t5uD0LI/nQSmYPTT1XRo5RFg+oPlU/VRFsCKJeTBXSw=
+github.com/patrickmn/go-cache v2.1.0+incompatible h1:HRMgzkcYKYpi3C8ajMPV8OFXaaRUnok+kx1WdO15EQc=
+github.com/patrickmn/go-cache v2.1.0+incompatible/go.mod h1:3Qf8kWWT7OJRJbdiICTKqZju1ZixQ/KpMGzzAfe6+WQ=

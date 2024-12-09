@@ -7,4 +7,7 @@ require (
 	github.com/hanson/go-toolbox v0.0.0-20240913115204-6a99ca7a1f3e
 )
 
-require github.com/hanson/gFile v0.0.0-20230417072256-83e263b855d4 // indirect
+require (
+	github.com/hanson/gFile v0.0.0-20230417072256-83e263b855d4 // indirect
+	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
+)
