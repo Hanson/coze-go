@@ -7,10 +7,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/hanson/coze-go/client"
 	"github.com/hanson/go-toolbox/utils"
-	"github.com/patrickmn/go-cache"
-	"io"
 	"log"
-	"net/http"
 	"os"
 	"time"
 )
@@ -23,26 +20,32 @@ type Oauth struct {
 	key   []byte
 	token *jwt.Token
 
-	accessToken *OauthTokenResp
+	client *client.Client
 }
 
-var c *cache.Cache
-
 func NewOauth(appId, kid string) (oauth *Oauth) {
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-		"iss": appId,                    // OAuth 应用的 ID
+	oauth = &Oauth{
+		appId:  appId,
+		kid:    kid,
+		client: client.NewClient("", 0),
+	}
+
+	oauth.NewJwtToken()
+
+	return
+}
+
+func (o *Oauth) NewJwtToken() *Oauth {
+	o.token = jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
+		"iss": o.appId,                  // OAuth 应用的 ID
 		"aud": "api.coze.cn",            //扣子 API 的Endpoint
 		"iat": time.Now().Unix(),        // JWT开始生效的时间，秒级时间戳
 		"exp": time.Now().Unix() + 3600, // JWT过期时间，秒级时间戳
 		"jti": utils.RandStr(16, 0),     // 随机字符串，防止重放攻击
 	})
-	token.Header["kid"] = kid
+	o.token.Header["kid"] = o.kid
 
-	c = cache.New(5*time.Minute, 10*time.Minute)
-
-	return &Oauth{
-		token: token,
-	}
+	return o
 }
 
 func (o *Oauth) WithPemByte(pem []byte) *Oauth {
@@ -82,62 +85,93 @@ func (o *Oauth) sign() (string, error) {
 	return sign, nil
 }
 
-type OauthTokenResp struct {
-	ExpiresIn   int64
-	AccessToken string
+func (o *Oauth) Sign() (string, error) {
+	return o.sign()
 }
 
-func (o *Oauth) GetClient() (*client.Client, error) {
-	rsp, err := o.getToken()
-	if err != nil {
-		return nil, err
-	}
-
-	return client.NewClient(rsp.AccessToken, rsp.ExpiresIn), nil
-}
-
-func (o *Oauth) GetToken() (*OauthTokenResp, error) {
-	return o.getToken()
-}
-
-func (o *Oauth) getToken() (*OauthTokenResp, error) {
+func (o *Oauth) GetClient() (cli *client.Client, err error) {
 	tokenCache, found := c.Get("token_" + o.kid)
+	var rsp *OauthTokenResp
 	if found {
-		return tokenCache.(*OauthTokenResp), nil
+		rsp = tokenCache.(*OauthTokenResp)
+	} else {
+		rsp, err = o.GetToken()
+		if err != nil {
+			return nil, err
+		}
+
 	}
+
+	o.client = client.NewClient(rsp.AccessToken, rsp.ExpiresIn)
+
+	return o.client, nil
+}
+
+type OauthTokenResp struct {
+	ExpiresIn   int64  `json:"expires_in,omitempty"`
+	AccessToken string `json:"access_token,omitempty"`
+}
+
+func (o *Oauth) GetToken() (resp *OauthTokenResp, err error) {
 
 	sign, err := o.sign()
 	if err != nil {
 		return nil, err
 	}
 
-	req, _ := http.NewRequest("POST", "https://api.coze.cn/api/permission/oauth2/token", bytes.NewReader([]byte(`{"duration_seconds": 86399,"grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer"}`)))
+	o.client.SetToken(sign)
 
-	req.Header.Add("Authorization", "Bearer "+sign)
-	req.Header.Add("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
+	b, err := o.client.Request("POST", "https://api.coze.cn/api/permission/oauth2/token", bytes.NewReader([]byte(`{"duration_seconds": 86399,"grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer"}`)))
 	if err != nil {
-		log.Printf("err: %+v", err)
-		return nil, err
+		return
 	}
 
-	defer resp.Body.Close()
+	fmt.Println(string(b))
 
-	b, err := io.ReadAll(resp.Body)
+	err = json.Unmarshal(b, &resp)
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	var rsp OauthTokenResp
-	err = json.Unmarshal(b, &rsp)
-	if err != nil {
-		return nil, err
-	}
+	c.Set("token_"+o.kid, resp, 86000*time.Second)
 
-	o.accessToken = &rsp
-
-	c.Set("token_"+o.kid, &rsp, 86000)
-
-	return &rsp, nil
+	return
 }
+
+//func (o *Oauth) getToken() (*OauthTokenResp, error) {
+//
+//	sign, err := o.sign()
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	req, _ := http.NewRequest("POST", "https://api.coze.cn/api/permission/oauth2/token", bytes.NewReader([]byte(`{"duration_seconds": 86399,"grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer"}`)))
+//
+//	req.Header.Add("Authorization", "Bearer "+sign)
+//	req.Header.Add("Content-Type", "application/json")
+//
+//	resp, err := http.DefaultClient.Do(req)
+//	if err != nil {
+//		log.Printf("err: %+v", err)
+//		return nil, err
+//	}
+//
+//	defer resp.Body.Close()
+//
+//	b, err := io.ReadAll(resp.Body)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	fmt.Println(string(b))
+//
+//	var rsp OauthTokenResp
+//	err = json.Unmarshal(b, &rsp)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	c.Set("token_"+o.kid, &rsp, 86000*time.Second)
+//
+//	return &rsp, nil
+//}

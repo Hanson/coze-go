@@ -9,7 +9,12 @@ go get github.com/hanson/coze-go
 # Usage
 
 ```
-  // 获取 token
-  oauth := NewOauth("appid", "kid").WithPemByte([]byte("xxx"))
+  oauth := auth.NewOauth("appid", "kid").WithPemByte([]byte("xxx"))
   oauth.GetToken()
+  
+  // 创建会话对象
+  c := NewConversation(o)
+  
+  // 创建会话
+  c.CreateConversation(&CreateConversationReq{})
 ```
