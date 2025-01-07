@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/hanson/coze-go/auth"
-	"github.com/hanson/coze-go/client"
+	"github.com/hanson/coze-go/common"
 )
 
 type Conversation struct {
-	client *client.Client
-	auth   auth.Auth
+	//client *client.Client
+	auth auth.Auth
 }
 
 func NewConversation(auth auth.Auth) *Conversation {
@@ -21,13 +21,7 @@ func NewConversation(auth auth.Auth) *Conversation {
 //}
 
 type CreateConversationReq struct {
-	Messages []struct {
-		Role        string            `json:"role"`
-		Type        string            `json:"type"`
-		Content     string            `json:"content"`
-		ContentType string            `json:"content_type"`
-		MetaData    map[string]string `json:"meta_data"`
-	} `json:"messages"`
+	Messages []*common.Message `json:"messages"`
 	MetaData map[string]string `json:"meta_data"`
 }
 
@@ -38,7 +32,7 @@ type CreateConversationResp struct {
 		Id        string            `json:"id"`
 		CreatedAt int64             `json:"created_at"`
 		MetaData  map[string]string `json:"meta_data"`
-	}
+	} `json:"data"`
 }
 
 func (c *Conversation) CreateConversation(req *CreateConversationReq) (resp *CreateConversationResp, err error) {
