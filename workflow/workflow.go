@@ -3,6 +3,7 @@ package workflow
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/hanson/coze-go/auth"
 )
 
@@ -30,6 +31,7 @@ type WorkflowRunResp struct {
 	Data      string `json:"data"`
 	DebugUrl  string `json:"debug_url"`
 	ExecuteId string `json:"execute_id"`
+	Token     int64  `json:"token"`
 }
 
 func (w *Workflow) WorkflowRun(req *WorkflowRunReq) (resp *WorkflowRunResp, err error) {
@@ -47,6 +49,8 @@ func (w *Workflow) WorkflowRun(req *WorkflowRunReq) (resp *WorkflowRunResp, err 
 	if err != nil {
 		return
 	}
+
+	fmt.Println(string(respBody))
 
 	err = json.Unmarshal(respBody, &resp)
 	if err != nil {
